@@ -8,6 +8,7 @@ from jose import jwt
 from urllib.request import urlopen
 import json
 
+
 from models import setup_db, Account
 
 
@@ -24,9 +25,9 @@ def create_app(test_config=None):
     #     return response
     # __________________________________________________AUTH0__________________________________________________
 
-    AUTH0_DOMAIN = 'felgoal.eu.auth0.com'
+    AUTH0_DOMAIN = 'auth-flask.eu.auth0.com'
     ALGORITHMS = ['RS256']
-    API_AUDIENCE = 'sawsan'
+    API_AUDIENCE = 'goal'
 
     class AuthError(Exception):
         def __init__(self, error, status_code):
@@ -35,9 +36,10 @@ def create_app(test_config=None):
 
     def verify_decode_jwt(token):
         # GET THE PUBLIC KEY FROM AUTH0
-        jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
+        jsonurl = urlopen(
+            f'https://auth-flask.eu.auth0.com/.well-known/jwks.json')
         jwks = json.loads(jsonurl.read())
-        # print (jwks) 
+        # print (jwks)
         # GET THE DATA IN THE HEADER
         unverified_header = jwt.get_unverified_header(token)
 
@@ -112,12 +114,20 @@ def create_app(test_config=None):
 
         return auth_header[1]
 
-    # TODO implement the requires_auth decorator. Make sure that you get a customed error, not a 500 server error.  
+    # TODO implement the requires_auth decorator. Make sure that you get a customed error, not a 500 server error.
     # ______________________________________________________________________________________________________
+
+    def requires_auth(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            jwt = get_token_auth_header()
+            return f(jwt, *args, **kwargs)
+        return wrapper
 
     @app.route('/')
     @requires_auth
     def index(jwt):
+        print(jwt)
         return jsonify({
             'success': True,
             'message': 'Hello Udacians'
